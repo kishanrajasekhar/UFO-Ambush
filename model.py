@@ -1,3 +1,5 @@
+#The model contains all the functions needed to run the game
+
 import controller, sys
 import model   #strange, but we need a reference to this module to pass this module to update
 from space_ship import Space_ship
@@ -15,11 +17,8 @@ pause = False
 ship = None #this becomes the space ship that the player controls
 simultons = set() # a set of simultons, starting with the ship
 score = 0
-game_over = False 
-ammunition = 100 #number of bullets that the ship has
-
-#Global Constants
-OBSTACLES = {Asteroid:0.1, Floater:0.01} #obstacles and their appearance rate
+update_count = 0 #keeps track of how many times the update all method is called
+obstacles = {Asteroid:0.1, Floater:0.01} #obstacles and their appearance rate
 
 
 #return a 2-tuple of the width and height of the canvas (defined in the controller)
@@ -36,7 +35,9 @@ def start():
     ship = Space_ship(w/2, h-10)
     simultons.add(ship) #add the ship that the player controls
     controller.the_pause_button["text"] = "Start Game!"
+    controller.the_score.config(text = "Press Start Game!", width = 40)
     pause = True
+    
 
 #add simulton s to the simulation
 def add(s):
@@ -62,6 +63,7 @@ def find(p):
 #call update for every simulton in the simulation
 def update_all():
     #intitial screen setup
+    #for some reason, I have to use 2 global variables..I'm not sure why
     global first, second
     if second:
         start()
@@ -72,16 +74,20 @@ def update_all():
         
     #what happens every update after initialization
     else:
-        global pause, simultons, score, ship, game_over, ammunition
+        global pause, simultons, score, ship, game_over, update_count
+        ammunition = None #how much ammo the ship has
         #if any projectile is outside the canvas window
-        destroyed = find(lambda s: isinstance(s,Projectile) and\
+        outOfScreen = find(lambda s: isinstance(s,Projectile) and\
                  (s.get_location()[0] > controller.the_canvas.winfo_width()\
                  or s.get_location()[0] < 0) or (s.get_location()[1] < 0 or \
                  s.get_location()[1] > controller.the_canvas.winfo_height()))
+        destroyed = set()
         new_objects = set()
         if not pause:
             if ship not in simultons: #game over
-                game_over = True
+                controller.the_score.config(text = "Game Over. Score: " + str(score) +\
+                 " \nPress Reset to play again", width = 40)
+                return
             add_obstacle()
             for s in simultons:
                 if s == ship:
@@ -95,32 +101,47 @@ def update_all():
                         destroyed |= contact 
                 elif isinstance(s, Floater):
                     new_objects.add(s.update())
-            for e in destroyed:
-                if isinstance(e, Asteroid):
+            for obj in outOfScreen:
+                simultons.remove(obj)
+            for obj in destroyed:
+                if isinstance(obj, Asteroid):
                     score += 1
-                simultons.remove(e)
+                elif isinstance(obj, Floater):
+                    score += 2
+                simultons.remove(obj)
             simultons |= {new for new in new_objects if new != None}
             #update game information
             info = "Score: " + str(score) +\
                     "|Ammunition: " +str(ammunition)
             controller.the_score.config(text = info, width = 40)
-            controller.the_pause_button["text"] = "Pause"
+            #increase difficulty every 100 updates
+            update_count +=1
+            if update_count > 100 and update_count%100 == 0:
+                challenge_increase()
             
     
         
 def add_obstacle(): #add asteroids to simulton list
-    global simultons, OBSTACLES
+    global simultons, obstacles
     r = random.random()
-    obstacle = list(OBSTACLES)[random.randrange(len(OBSTACLES))] #randomly chosen obstacle
-    if r < OBSTACLES[obstacle]: #the appearance rate of the randomly chosen obstacle
+    obstacle = list(obstacles)[random.randrange(len(obstacles))] #randomly chosen obstacle
+    if r < obstacles[obstacle]: #the appearance rate of the randomly chosen obstacle
         w,h = world()
         random_width = random.randrange(0,w)
         simultons.add(obstacle(random_width, 10))
+        
+def challenge_increase():
+    global obstacles
+    for o in obstacles:
+        if obstacles[o] < .5: #putting limit at 50% appearance rate
+            obstacles[o] += 0.01  #increases the appearance rate of the obstacles by 1%
 
 def move_ship(event):
     global simultons, pause
     key = repr(event.char)
-#     if key == "'p'":
+#     if key == "'r'": #allows players to reset game by pressing 'r'
+#         reset()
+#     if key == "'p'": #this also allows player to pause by pressing 'p'
 #         pause_game()
     if pause:
         return #don't run the code below if the game is paused
@@ -134,12 +155,21 @@ def move_ship(event):
 def pause_game():
     global pause
     if pause:
+        controller.the_pause_button["text"] = "Pause"
         pause = False
     else:
+        controller.the_pause_button["text"] = "Continue"
         pause = True
         
 def reset():
-    pass
+    global first, second, pause, ship, simultons, score, obstacles
+    first = True
+    second = False
+    pause = False
+    ship = None #this becomes the space ship that the player controls
+    simultons = set() # a set of simultons, starting with the ship
+    score = 0
+    obstacles = {Asteroid:0.1, Floater:0.01}
         
 #delete from the canvas every simulton in the simulation, and then call display for every
 #  simulton in the simulation to add it back to the canvas possibly in a new location: to

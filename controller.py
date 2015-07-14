@@ -1,3 +1,5 @@
+#Sets ups all the tkinter tools and their functions
+
 from tkinter import Button,Label,Canvas
 
 # import model to refer to functions that buttons call via command=...
@@ -21,6 +23,9 @@ def pause_button  (parent,**config):
     the_pause_button = Button(parent,command=model.pause_game,**config)
     return the_pause_button
 
+def reset_button (parent, **config):
+    return Button(parent,command=model.reset,**config)
+
 def simulation_canvas  (parent,**config):
     global the_canvas
     the_canvas = Canvas(parent,**config)
@@ -40,7 +45,7 @@ def progress  (parent,**config):
 #   function reschedules itself to be called in 100 milliseconds
 # This makes the simulation update itself every .1 seconds
 def repeater(root):
-    if model.game_over: return #end the game
+    #make a gameover method in model!!!
     model.update_all()
     model.display_all()
     root.after(100,repeater,root)

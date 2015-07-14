@@ -1,3 +1,5 @@
+
+#The script is what runs the program
 import view
 import controller
 

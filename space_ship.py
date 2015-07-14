@@ -8,11 +8,12 @@ from missile import Missile
 class Space_ship(Mobile_Simulton):
     SPEED = 5
     RECHARGE_TIME = 50 #time needed to re equip on bullets
-    CAPACITY = 10 #number of bullets ship can carry
+    CAPACITY = 15 #number of bullets ship can carry
 
     def __init__(self,x ,y):
         Mobile_Simulton.__init__(self, x, y, 10, 10, 0, Space_ship.SPEED)
         self._image = PhotoImage(file = "spaceship.gif")
+        self._recharge_image = PhotoImage(file = "spaceship_recharge.gif")
         self.bullets = Space_ship.CAPACITY #holds 
         self.charge = 0
         
@@ -52,4 +53,7 @@ class Space_ship(Mobile_Simulton):
         return self.bullets
 
     def display(self, canvas):
-        canvas.create_image(*self.get_location(),image=self._image)
+        if self.bullets <= 0: #spaceship is recharging
+            canvas.create_image(*self.get_location(),image=self._recharge_image)
+        else:
+            canvas.create_image(*self.get_location(),image=self._image)
