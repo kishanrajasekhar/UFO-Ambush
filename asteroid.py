@@ -1,3 +1,5 @@
+#An asteroid is a large Projectile.
+
 from projectile import Projectile
 import math
 

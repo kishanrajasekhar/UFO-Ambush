@@ -1,10 +1,13 @@
+#Code is originally written by Professor Richard Pattis' of
+#of University Of Califorina, Irvine. I made some modifications.
+
 #The model contains all the functions needed to run the game
 
 import controller, sys
 import model   #strange, but we need a reference to this module to pass this module to update
 from space_ship import Space_ship
 from projectile import Projectile
-import math, random
+import random
 from asteroid import Asteroid
 from floater import Floater
 
@@ -21,37 +24,37 @@ update_count = 0 #keeps track of how many times the update all method is called
 obstacles = {Asteroid:0.1, Floater:0.01} #obstacles and their appearance rate
 
 
-#return a 2-tuple of the width and height of the canvas (defined in the controller)
 def world():
+    '''return a 2-tuple of the width and height of the canvas (defined in the controller)'''
     return (controller.the_canvas.winfo_width(), controller.the_canvas.winfo_height())
 
 
 
-#how the initial screen setup should be, a spaceship on the bottom center of the 
-#window 
 def start():
+    '''How the initial screen setup should be, a spaceship on the bottom center of the 
+    window'''
     global simultons,ship, ASTEROID, pause
-    w,h = world() #the widht and height of the world
-    ship = Space_ship(w/2, h-10)
+    w,h = world() #the width and height of the world
+    ship = Space_ship(w/2, h-10, 5, 50, 15)
     simultons.add(ship) #add the ship that the player controls
     controller.the_pause_button["text"] = "Start Game!"
     controller.the_score.config(text = "Press Start Game!", width = 40)
     pause = True
     
 
-#add simulton s to the simulation
 def add(s):
+    '''add simulton s to the simulation'''
     simultons.add(s)
     
 
-# remove simulton s from the simulation    
 def remove(s):
+    '''remove simultons from the simulation'''
     global simultons
     simultons.remove(s)
     
 
-#find/return a set of simultons that each satisfy predicate p    
 def find(p):
+    '''find/return a set of simultons that each satisfy predicate p'''
     global simultons
     result = set()
     for s in simultons:
@@ -60,8 +63,8 @@ def find(p):
     return result
 
 
-#call update for every simulton in the simulation
 def update_all():
+    '''Calls the update method of every simulton in the simulation'''
     #intitial screen setup
     #for some reason, I have to use 2 global variables..I'm not sure why
     global first, second
@@ -93,27 +96,41 @@ def update_all():
                 if s == ship:
                     ammunition = s.get_num_bullets()
                     s.recharge()
-                    pass
+                    if update_count > 25 and update_count%25 == 0:
+                        if not s.is_recharging():
+                            s.add_bullets(1)
                 elif isinstance(s,Projectile):
                     targets = find(lambda t: t!= s) #every other simulton except the projectile itself
                     contact = s.update(targets)#might have to edit the update method
                     if contact != None: #if contact is actually a returned set
                         destroyed |= contact 
                 elif isinstance(s, Floater):
-                    new_objects.add(s.update())
-            for obj in outOfScreen:
+                    #This prevents the ufo from firing a bullet when it's too close
+                    #to the bottom of the screen
+                    m = s.update()
+                    if s.get_location()[1] < (world()[1] -10):
+                        new_objects.add(m)
+                    
+            for obj in outOfScreen: #remove objects out of screen from the array
+                #this prevents the array from becoming to large
                 simultons.remove(obj)
+            
+            #player gets points for ANY object that gets destroyed on screen
             for obj in destroyed:
                 if isinstance(obj, Asteroid):
-                    score += 1
+                    score += 1 
                 elif isinstance(obj, Floater):
-                    score += 2
+                    score += 5
                 simultons.remove(obj)
+                
+            #add new objects to the screeen as long as it isn't a None type
             simultons |= {new for new in new_objects if new != None}
+            
             #update game information
             info = "Score: " + str(score) +\
                     "|Ammunition: " +str(ammunition)
             controller.the_score.config(text = info, width = 40)
+            
             #increase difficulty every 100 updates
             update_count +=1
             if update_count > 100 and update_count%100 == 0:
@@ -121,7 +138,8 @@ def update_all():
             
     
         
-def add_obstacle(): #add asteroids to simulton list
+def add_obstacle(): 
+    '''Adds obstacle to the simulton list'''
     global simultons, obstacles
     r = random.random()
     obstacle = list(obstacles)[random.randrange(len(obstacles))] #randomly chosen obstacle
@@ -131,12 +149,15 @@ def add_obstacle(): #add asteroids to simulton list
         simultons.add(obstacle(random_width, 10))
         
 def challenge_increase():
+    '''Increase the appearance rate of each obstacle'''
     global obstacles
     for o in obstacles:
-        if obstacles[o] < .5: #putting limit at 50% appearance rate
+        if obstacles[o] < .5: #putting limit for each obstacle at 50% appearance rate
             obstacles[o] += 0.01  #increases the appearance rate of the obstacles by 1%
 
 def move_ship(event):
+    '''The event (keyboard input) determines what action the ship will take 
+    (move left, move right, fire, etc)'''
     global simultons, pause
     key = repr(event.char)
 #     if key == "'r'": #allows players to reset game by pressing 'r'
@@ -153,6 +174,7 @@ def move_ship(event):
     simultons |= more_simultons #add any missles fired by the tanks 
     
 def pause_game():
+    '''Pauses the game'''
     global pause
     if pause:
         controller.the_pause_button["text"] = "Pause"
@@ -162,19 +184,22 @@ def pause_game():
         pause = True
         
 def reset():
+    '''Resets the game'''
     global first, second, pause, ship, simultons, score, obstacles
     first = True
     second = False
     pause = False
-    ship = None #this becomes the space ship that the player controls
-    simultons = set() # a set of simultons, starting with the ship
+    ship = None 
+    simultons = set() 
     score = 0
     obstacles = {Asteroid:0.1, Floater:0.01}
         
-#delete from the canvas every simulton in the simulation, and then call display for every
-#  simulton in the simulation to add it back to the canvas possibly in a new location: to
-#  animate it; also, update the progress label defined in the controller
+        
 def display_all():
+    '''Delete from the canvas every simulton in the simulation, and then call display
+     for every simulton in the simulation to add it back to the canvas possibly in a new 
+     location: this creates the animation effect. Also, update the progress label defined 
+     in the controller'''
     global simultons
     #deletes all the objects drawn on the canvas
     for o in controller.the_canvas.find_all():

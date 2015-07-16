@@ -1,3 +1,5 @@
+#A missile is a tiny projectile
+
 from projectile import Projectile
 import math
 

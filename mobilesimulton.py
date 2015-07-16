@@ -1,3 +1,7 @@
+#Code is originally written by Professor Richard Pattis' of
+#of University Of Califorina, Irvine. There are no modifications in 
+#this module, I just added a few docstrings.
+
 # Mobile_Simultons have angles (in radians) and speeds
 #   (in pixels/update); they inherit locations and
 #   dimensions (and methods) from Simulton.
@@ -64,16 +68,20 @@ class Mobile_Simulton(Simulton):
 
     
     def move(self):
+        '''Object changes position on the GUI, but does not
+        leave the window'''
         self.change_location(self._speed*math.cos(self._angle),
                              self._speed*math.sin(self._angle))
         self.wall_bounce()
 
         
     def bounce(self,barrier_angle):
+        '''Changes the angle of movement (aka direction) of the object'''
         self._angle = 2*barrier_angle - self._angle
 
         
     def wall_bounce(self):
+        '''Changes the angle whenever the object approaches the edge of the window'''
         x,y      = self.get_location()
         w,h      = self.get_dimension()
         mw,mh    = model.world()

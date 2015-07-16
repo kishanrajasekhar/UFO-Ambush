@@ -1,3 +1,6 @@
+#Code is originally written by Professor Richard Pattis' of
+#of University Of Califorina, Irvine. I made some modifications.
+
 #The view module sets up what is seen on the GUI
 
 from tkinter import Tk,Frame,TOP,LEFT,BOTTOM,RAISED,BOTH

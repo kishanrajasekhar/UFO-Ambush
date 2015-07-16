@@ -18,6 +18,8 @@ class Floater(Mobile_Simulton):
         self._image = PhotoImage(file='ufo.gif')      
 
     def update(self): 
+        '''Floaters [ufo] change randomly change there speed and direction 30% 
+        of the time. They fire bullets 10% of the time.'''
         self.move()
         r = random.random()
         if r < 0.3:
@@ -32,8 +34,11 @@ class Floater(Mobile_Simulton):
         r = random.random()
         if r < 0.1: #shoots a missile downwards 10% of the time
             x,y = self.get_location()
+            #An exception occurs when a missile is returned out of the coordinates
+            #of the canvas
             return Missile(x, y + 10, math.pi/2, 'blue')
         
         
     def display(self, canvas):
+        '''Floater image is a ufo icon'''
         canvas.create_image(*self.get_location(),image=self._image)
