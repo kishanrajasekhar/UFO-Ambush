@@ -13,6 +13,7 @@ import controller
 root = Tk()
 root.title("Simulation")
 root.protocol("WM_DELETE_WINDOW",quit)
+root.resizable(0, 0) #this prevents you from resizing the window
 
 frame = Frame(root)
 

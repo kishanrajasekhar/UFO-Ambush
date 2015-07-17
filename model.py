@@ -2,7 +2,7 @@
 #of University Of Califorina, Irvine. I made some modifications.
 
 #The model contains all the functions needed to run the game
-
+import tkinter
 import controller, sys
 import model   #strange, but we need a reference to this module to pass this module to update
 from space_ship import Space_ship
@@ -22,6 +22,7 @@ simultons = set() # a set of simultons, starting with the ship
 score = 0
 update_count = 0 #keeps track of how many times the update all method is called
 obstacles = {Asteroid:0.1, Floater:0.01} #obstacles and their appearance rate
+recoreded_score = False #if the score was recored after the player lost
 
 
 def world():
@@ -29,6 +30,39 @@ def world():
     return (controller.the_canvas.winfo_width(), controller.the_canvas.winfo_height())
 
 
+def get_high_scores():
+    '''Returns a list of high scores (from highest to lowest)'''
+    score_list = []
+    file = open("scores.txt", 'r')
+    for f in file:
+        score_list.append(int(f))
+    file.close()
+    return score_list
+    
+def add_score():
+    '''Adds score to scores.txt, the text file containing the high scores'''
+    global score 
+    l = get_high_scores()
+    LIMIT = (len(l)+1)\
+        if (len(l)+1) < 100 else 100 #The limit on how many scores to add in the text file
+    l.append(score)
+    l.sort(reverse = True)
+    file = open("scores.txt", 'w')
+    for i in range(LIMIT):
+        file.write(str(l[i]) + "\n")
+    file.close()
+    
+def display_scores():
+    '''Displays the top ten scores on the GUI'''
+    x,y = world()
+    txt = "Top 10 Scores"
+    score_list = get_high_scores()
+    i = 1
+    for score in score_list:
+        if (i > 10):break
+        txt += "\n" + str(i) + ".  " + str(score)
+        i+=1
+    controller.the_canvas.create_text(x/2, y/2, font="Purisa", text=txt, fill='blue')
 
 def start():
     '''How the initial screen setup should be, a spaceship on the bottom center of the 
@@ -77,7 +111,7 @@ def update_all():
         
     #what happens every update after initialization
     else:
-        global pause, simultons, score, ship, game_over, update_count
+        global pause, simultons, score, ship, game_over, update_count, recoreded_score
         ammunition = None #how much ammo the ship has
         #if any projectile is outside the canvas window
         outOfScreen = find(lambda s: isinstance(s,Projectile) and\
@@ -90,6 +124,9 @@ def update_all():
             if ship not in simultons: #game over
                 controller.the_score.config(text = "Game Over. Score: " + str(score) +\
                  " \nPress Reset to play again", width = 40)
+                if not recoreded_score:
+                    add_score()
+                    recoreded_score = True
                 return
             add_obstacle()
             for s in simultons:
@@ -106,9 +143,9 @@ def update_all():
                         destroyed |= contact 
                 elif isinstance(s, Floater):
                     #This prevents the ufo from firing a bullet when it's too close
-                    #to the bottom of the screen
+                    #to the bottom of the screen (which throws an KeyError for some reason)
                     m = s.update()
-                    if s.get_location()[1] < (world()[1] -10):
+                    if s.get_location()[1] < (world()[1] -15):
                         new_objects.add(m)
                     
             for obj in outOfScreen: #remove objects out of screen from the array
@@ -118,9 +155,9 @@ def update_all():
             #player gets points for ANY object that gets destroyed on screen
             for obj in destroyed:
                 if isinstance(obj, Asteroid):
-                    score += 1 
+                    score += 100 #100 points for shooting asteroid 
                 elif isinstance(obj, Floater):
-                    score += 5
+                    score += 500 #500 points for shooting ufo
                 simultons.remove(obj)
                 
             #add new objects to the screeen as long as it isn't a None type
@@ -136,6 +173,7 @@ def update_all():
             if update_count > 100 and update_count%100 == 0:
                 challenge_increase()
             
+            score += 1 #score increases for every update
     
         
 def add_obstacle(): 
@@ -185,7 +223,7 @@ def pause_game():
         
 def reset():
     '''Resets the game'''
-    global first, second, pause, ship, simultons, score, obstacles
+    global first, second, pause, ship, simultons, score, obstacles, recoreded_score
     first = True
     second = False
     pause = False
@@ -193,17 +231,20 @@ def reset():
     simultons = set() 
     score = 0
     obstacles = {Asteroid:0.1, Floater:0.01}
-        
+    recoreded_score = False 
         
 def display_all():
     '''Delete from the canvas every simulton in the simulation, and then call display
      for every simulton in the simulation to add it back to the canvas possibly in a new 
      location: this creates the animation effect. Also, update the progress label defined 
      in the controller'''
-    global simultons
+    global simultons, ship
     #deletes all the objects drawn on the canvas
     for o in controller.the_canvas.find_all():
         controller.the_canvas.delete(o)
     #redraws the canvas with objects containing new data    
     for s in simultons:
         s.display(controller.the_canvas)
+    #If game over
+    if ship not in simultons: 
+        display_scores()
