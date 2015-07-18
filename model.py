@@ -23,7 +23,7 @@ score = 0
 update_count = 0 #keeps track of how many times the update all method is called
 obstacles = {Asteroid:0.1, Floater:0.01} #obstacles and their appearance rate
 recoreded_score = False #if the score was recored after the player lost
-
+is_start_screen = True #if the display is the start screen
 
 def world():
     '''return a 2-tuple of the width and height of the canvas (defined in the controller)'''
@@ -63,16 +63,30 @@ def display_scores():
         txt += "\n" + str(i) + ".  " + str(score)
         i+=1
     controller.the_canvas.create_text(x/2, y/2, font="Purisa", text=txt, fill='blue')
+    
+    
+def display_rules():
+    '''Displays the rules of the game'''
+    txt = '''
+    A-move left
+    D-move right
+    W-shoot straight
+    Q-shoot diagonal(left)
+    E-shoot diagonal(right)'''
+    x,y = world()
+    controller.the_canvas.create_text(x/2, y/2, font="Purisa", text=txt, fill='blue')
+    
 
 def start():
     '''How the initial screen setup should be, a spaceship on the bottom center of the 
     window'''
-    global simultons,ship, ASTEROID, pause
+    global simultons,ship, ASTEROID, pause, is_start_screen
     w,h = world() #the width and height of the world
     ship = Space_ship(w/2, h-10, 5, 50, 15)
     simultons.add(ship) #add the ship that the player controls
     controller.the_pause_button["text"] = "Start Game!"
     controller.the_score.config(text = "Press Start Game!", width = 40)
+    is_start_screen=True
     pause = True
     
 
@@ -111,7 +125,9 @@ def update_all():
         
     #what happens every update after initialization
     else:
-        global pause, simultons, score, ship, game_over, update_count, recoreded_score
+        global pause, simultons, score, ship, game_over, update_count, recoreded_score,\
+        is_start_screen
+        
         ammunition = None #how much ammo the ship has
         #if any projectile is outside the canvas window
         outOfScreen = find(lambda s: isinstance(s,Projectile) and\
@@ -121,6 +137,8 @@ def update_all():
         destroyed = set()
         new_objects = set()
         if not pause:
+            is_start_screen = False #can't be the start screen if gameplay is occurring
+            
             if ship not in simultons: #game over
                 controller.the_score.config(text = "Game Over. Score: " + str(score) +\
                  " \nPress Reset to play again", width = 40)
@@ -145,7 +163,7 @@ def update_all():
                     #This prevents the ufo from firing a bullet when it's too close
                     #to the bottom of the screen (which throws an KeyError for some reason)
                     m = s.update()
-                    if s.get_location()[1] < (world()[1] -15):
+                    if s.get_location()[1] < (world()[1] -50):
                         new_objects.add(m)
                     
             for obj in outOfScreen: #remove objects out of screen from the array
@@ -238,13 +256,15 @@ def display_all():
      for every simulton in the simulation to add it back to the canvas possibly in a new 
      location: this creates the animation effect. Also, update the progress label defined 
      in the controller'''
-    global simultons, ship
+    global simultons, ship, is_start_screen
     #deletes all the objects drawn on the canvas
     for o in controller.the_canvas.find_all():
         controller.the_canvas.delete(o)
     #redraws the canvas with objects containing new data    
     for s in simultons:
         s.display(controller.the_canvas)
+    if is_start_screen:
+        display_rules()
     #If game over
     if ship not in simultons: 
         display_scores()
