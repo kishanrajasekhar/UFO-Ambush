@@ -1,7 +1,7 @@
 # UFO-Ambush
 
 ## How to play
-***Requires Python 3
+Requires Python 3
 Run script.py
 
 You're in your ship traveling in outer space when suddeny you encounter many enemy ufos. A single ship cannot fight them all, so you drive your ship into an asteroid belt. You hope that the asteroids will cover you from the enemy fire and even crash into some of the ufos. The goal of this game is to last as long as possible.
